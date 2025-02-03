@@ -1,6 +1,7 @@
 "use server"
 
-import { MongoClient, ObjectId } from "mongodb"
+import { MongoClient, ObjectId, Db, Collection } from "mongodb"
+import clientPromise from '@/lib/mongodb'
 
 interface ApolloOrganization {
   name?: string;
@@ -30,40 +31,40 @@ interface ApolloResponse {
   person: ApolloPerson;
 }
 
-interface LeadData {
-  name: string;
-  position: string;
-  companyName: string;
-  photo: string | null;
-  contactDetails: {
-    email: string;
-    phone: string;
-    linkedin: string;
-  };
-  companyDetails: {
-    industry: string;
-    employees: string;
-    headquarters: string;
-    website: string;
-  };
-  leadScoring: {
-    rating: string;
-    qualificationCriteria: {
-      [key: string]: string;
-    };
-  };
-}
+// interface LeadData {
+//   name: string;
+//   position: string;
+//   companyName: string;
+//   photo: string | null;
+//   contactDetails: {
+//     email: string;
+//     phone: string;
+//     linkedin: string;
+//   };
+//   companyDetails: {
+//     industry: string;
+//     employees: string;
+//     headquarters: string;
+//     website: string;
+//   };
+//   leadScoring: {
+//     rating: string;
+//     qualificationCriteria: {
+//       [key: string]: string;
+//     };
+//   };
+// }
 
-interface LeadReport {
-  _id?: ObjectId;
-  email: string;
-  apolloData: ApolloResponse;
-  report: string;
-  leadData: LeadData;
-  createdAt: Date;
-  status: string;
-  error?: string;
-}
+// interface LeadReport {
+//   _id?: ObjectId;
+//   email: string;
+//   apolloData: ApolloResponse;
+//   report: string;
+//   leadData: LeadData;
+//   createdAt: Date;
+//   status: string;
+//   error?: string;
+// }
 
 const APOLLO_API_KEY = process.env.APOLLO_API_KEY
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY
@@ -73,9 +74,21 @@ if (!APOLLO_API_KEY || !OPENAI_API_KEY || !MONGODB_URI) {
   throw new Error("Missing environment variables")
 }
 
-const client = new MongoClient(MONGODB_URI)
-const db = client.db("lead-reports")
-const reports = db.collection("reports")
+let client: MongoClient | null = null
+let db: Db | null = null
+let reports: Collection | null = null
+
+async function getDb() {
+  if (!client) {
+    client = await clientPromise
+    db = client.db("lead-reports")
+    reports = db.collection("reports")
+  }
+  if (!reports) {
+    throw new Error("Failed to initialize database connection")
+  }
+  return { db, reports }
+}
 
 export async function fetchApolloData(email: string) {
   if (!APOLLO_API_KEY) {
@@ -279,8 +292,10 @@ export async function initiateReport(formData: FormData) {
     throw new Error("Please provide a valid email address")
   }
 
+  const { reports } = await getDb()
+
   // Create an initial report entry
-  const initialReport: LeadReport = {
+  const initialReport = {
     email,
     apolloData: { person: {} },
     report: "",
@@ -300,22 +315,30 @@ export async function initiateReport(formData: FormData) {
   const result = await reports.insertOne(initialReport)
   const reportId = result.insertedId.toString()
 
-  // Start background processing
-  processReportInBackground(email, reportId).catch(console.error)
-
+  // Return immediately after creating the report
+  processReport(email, reportId).catch(console.error)
+  
   return { success: true, reportId, status: "processing" }
 }
 
-async function processReportInBackground(email: string, reportId: string) {
+// Separate function to handle the processing
+async function processReport(email: string, reportId: string) {
+  const { reports } = await getDb()
+  
   try {
+    // Step 1: Fetch Apollo Data
     const apolloData = await fetchApolloData(email)
-    const { report: aiReport, leadData } = await generateAIReport(apolloData)
+    await reports.updateOne(
+      { _id: new ObjectId(reportId) },
+      { $set: { apolloData, status: "fetching_apollo" } }
+    )
 
+    // Step 2: Generate AI Report
+    const { report: aiReport, leadData } = await generateAIReport(apolloData)
     await reports.updateOne(
       { _id: new ObjectId(reportId) },
       {
         $set: {
-          apolloData,
           report: aiReport,
           leadData,
           status: "completed"
@@ -323,6 +346,7 @@ async function processReportInBackground(email: string, reportId: string) {
       }
     )
   } catch (error) {
+    console.error('Error processing report:', error)
     await reports.updateOne(
       { _id: new ObjectId(reportId) },
       {
@@ -332,12 +356,13 @@ async function processReportInBackground(email: string, reportId: string) {
         }
       }
     )
-    throw error
   }
 }
 
 export async function getReportStatus(reportId: string) {
+  const { reports } = await getDb()
   const report = await reports.findOne({ _id: new ObjectId(reportId) })
+  
   if (!report) throw new Error("Report not found")
   
   return {
