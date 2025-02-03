@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { generateReport } from "@/app/actions"
+import { initiateReport } from "@/app/actions"
 import { useRouter } from "next/navigation"
 import { useState, useTransition } from "react"
 import { Search, Mail, ChevronRight, Users, LineChart } from "lucide-react"
@@ -17,7 +17,7 @@ export default function Home() {
     setIsLoading(true)
     startTransition(async () => {
       try {
-        const result = await generateReport(formData)
+        const result = await initiateReport(formData)
         if (result.success) {
           router.push(`/report/${result.reportId}`)
         }

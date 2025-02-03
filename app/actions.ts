@@ -61,6 +61,8 @@ interface LeadReport {
   report: string;
   leadData: LeadData;
   createdAt: Date;
+  status: string;
+  error?: string;
 }
 
 const APOLLO_API_KEY = process.env.APOLLO_API_KEY
@@ -270,30 +272,78 @@ Please provide specific recommendations for engaging with this lead based on the
   }
 }
 
-export async function generateReport(formData: FormData) {
+export async function initiateReport(formData: FormData) {
   const email = formData.get("email") as string
 
   if (!email || !email.includes('@')) {
     throw new Error("Please provide a valid email address")
   }
 
+  // Create an initial report entry
+  const initialReport: LeadReport = {
+    email,
+    apolloData: { person: {} },
+    report: "",
+    leadData: {
+      name: "",
+      position: "",
+      companyName: "",
+      photo: null,
+      contactDetails: { email: "", phone: "", linkedin: "" },
+      companyDetails: { industry: "", employees: "", headquarters: "", website: "" },
+      leadScoring: { rating: "", qualificationCriteria: {} }
+    },
+    createdAt: new Date(),
+    status: "processing"
+  }
+
+  const result = await reports.insertOne(initialReport)
+  const reportId = result.insertedId.toString()
+
+  // Start background processing
+  processReportInBackground(email, reportId).catch(console.error)
+
+  return { success: true, reportId, status: "processing" }
+}
+
+async function processReportInBackground(email: string, reportId: string) {
   try {
     const apolloData = await fetchApolloData(email)
     const { report: aiReport, leadData } = await generateAIReport(apolloData)
 
-    const report: LeadReport = {
-      email,
-      apolloData,
-      report: aiReport,
-      leadData,
-      createdAt: new Date(),
-    }
-
-    const result = await reports.insertOne(report)
-    return { success: true, reportId: result.insertedId.toString() }
+    await reports.updateOne(
+      { _id: new ObjectId(reportId) },
+      {
+        $set: {
+          apolloData,
+          report: aiReport,
+          leadData,
+          status: "completed"
+        }
+      }
+    )
   } catch (error) {
-    console.error('Report generation failed:', error)
-    throw error instanceof Error ? error : new Error("Failed to generate report")
+    await reports.updateOne(
+      { _id: new ObjectId(reportId) },
+      {
+        $set: {
+          status: "failed",
+          error: error instanceof Error ? error.message : "Unknown error"
+        }
+      }
+    )
+    throw error
+  }
+}
+
+export async function getReportStatus(reportId: string) {
+  const report = await reports.findOne({ _id: new ObjectId(reportId) })
+  if (!report) throw new Error("Report not found")
+  
+  return {
+    status: report.status,
+    data: report.status === "completed" ? report : null,
+    error: report.error
   }
 }
 
