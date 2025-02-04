@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { initiateReport } from "@/app/actions";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { Search, Mail, ChevronRight, Users, LineChart, Sparkles, ArrowRight, CheckCircle } from "lucide-react";
+import { Search, Mail, Users, LineChart, Sparkles, ArrowRight, CheckCircle } from "lucide-react";
 import { MeetingDetailsForm } from '@/components/ui/input';
 
 export default function Home() {

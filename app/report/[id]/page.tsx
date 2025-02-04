@@ -1,14 +1,23 @@
-'use client'
+"use client";
 
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import Link from "next/link"
-import ReactMarkdown from 'react-markdown'
-import Image from 'next/image'
-import { Building2, Mail, Phone, Linkedin, Globe, MapPin, Users, Briefcase, Calendar, Video } from 'lucide-react'
-import dynamic from 'next/dynamic'
-import { useState } from "react"
-import { MeetingDetailsForm } from '@/components/ui/input'
+import { Card } from "@/components/ui/card";
+import ReactMarkdown from "react-markdown";
+import Image from "next/image";
+import {
+  Building2,
+  Mail,
+  Phone,
+  Linkedin,
+  Globe,
+  MapPin,
+  Users,
+  Briefcase,
+  Calendar,
+  Video,
+} from "lucide-react";
+import dynamic from "next/dynamic";
+import { useState } from "react";
+// import { MeetingDetailsForm } from "@/components/ui/input";
 
 interface LeadData {
   name: string;
@@ -70,20 +79,25 @@ interface LeadReport {
   problemPitch?: string;
 }
 
-const ReportLoader = dynamic(() => import('./ReportLoader').then(mod => mod.ReportLoader), { ssr: false })
+const ReportLoader = dynamic(
+  () => import("./ReportLoader").then((mod) => mod.ReportLoader),
+  { ssr: false }
+);
 
 export default function ReportPage({ params }: { params: { id: string } }) {
-  const [report, setReport] = useState<LeadReport | null>(null)
+  const [report, setReport] = useState<LeadReport | null>(null);
 
   const handleReportReady = (loadedReport: LeadReport) => {
-    setReport(loadedReport)
-  }
+    setReport(loadedReport);
+  };
 
   if (!report) {
-    return <ReportLoader reportId={params.id} onReportReady={handleReportReady} />
+    return (
+      <ReportLoader reportId={params.id} onReportReady={handleReportReady} />
+    );
   }
 
-  const leadData = report.leadData
+  const leadData = report.leadData;
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
@@ -105,39 +119,53 @@ export default function ReportPage({ params }: { params: { id: string } }) {
                 </div>
               </div>
               <div className="flex-1 text-center md:text-left">
-                <h1 className="text-2xl md:text-3xl font-bold">{leadData.name}</h1>
-                <p className="text-lg md:text-xl text-blue-100 mt-2">{leadData.position}</p>
-                <p className="text-base md:text-lg text-blue-200 mt-1">{leadData.companyName}</p>
+                <h1 className="text-2xl md:text-3xl font-bold">
+                  {leadData.name}
+                </h1>
+                <p className="text-lg md:text-xl text-blue-100 mt-2">
+                  {leadData.position}
+                </p>
+                <p className="text-base md:text-lg text-blue-200 mt-1">
+                  {leadData.companyName}
+                </p>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4 md:mt-6">
                   {leadData.contactDetails.email && (
-                    <a href={`mailto:${leadData.contactDetails.email}`} 
-                       className="flex items-center justify-center md:justify-start gap-2 text-sm text-blue-100 hover:text-white">
+                    <a
+                      href={`mailto:${leadData.contactDetails.email}`}
+                      className="flex items-center justify-center md:justify-start gap-2 text-sm text-blue-100 hover:text-white"
+                    >
                       <Mail className="h-4 w-4" />
                       {leadData.contactDetails.email}
                     </a>
                   )}
                   {leadData.contactDetails.phone && (
-                    <a href={`tel:${leadData.contactDetails.phone}`} 
-                       className="flex items-center justify-center md:justify-start gap-2 text-sm text-blue-100 hover:text-white">
+                    <a
+                      href={`tel:${leadData.contactDetails.phone}`}
+                      className="flex items-center justify-center md:justify-start gap-2 text-sm text-blue-100 hover:text-white"
+                    >
                       <Phone className="h-4 w-4" />
                       {leadData.contactDetails.phone}
                     </a>
                   )}
                   {leadData.contactDetails.linkedin && (
-                    <a href={leadData.contactDetails.linkedin} 
-                       target="_blank" 
-                       rel="noopener noreferrer" 
-                       className="flex items-center justify-center md:justify-start gap-2 text-sm text-blue-100 hover:text-white">
+                    <a
+                      href={leadData.contactDetails.linkedin}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center md:justify-start gap-2 text-sm text-blue-100 hover:text-white"
+                    >
                       <Linkedin className="h-4 w-4" />
                       LinkedIn Profile
                     </a>
                   )}
                   {leadData.companyDetails.website && (
-                    <a href={leadData.companyDetails.website} 
-                       target="_blank" 
-                       rel="noopener noreferrer" 
-                       className="flex items-center justify-center md:justify-start gap-2 text-sm text-blue-100 hover:text-white">
+                    <a
+                      href={leadData.companyDetails.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center md:justify-start gap-2 text-sm text-blue-100 hover:text-white"
+                    >
                       <Globe className="h-4 w-4" />
                       Company Website
                     </a>
@@ -146,15 +174,30 @@ export default function ReportPage({ params }: { params: { id: string } }) {
               </div>
 
               <div className="bg-white/10 rounded-lg p-4 w-full md:min-w-[200px] md:w-auto mt-4 md:mt-0">
-                <h3 className="text-lg font-semibold mb-2 text-center md:text-left">Lead Score</h3>
-                <div className="text-2xl font-bold mb-3 text-center md:text-left">{leadData.leadScoring.rating}</div>
+                <h3 className="text-lg font-semibold mb-2 text-center md:text-left">
+                  Lead Score
+                </h3>
+                <div className="text-2xl font-bold mb-3 text-center md:text-left">
+                  {leadData.leadScoring.rating}
+                </div>
                 <div className="space-y-1">
-                  {(Object.entries(leadData.leadScoring.qualificationCriteria) as [string, string][]).map(([key, value]) => (
-                    <div key={key} className="flex justify-between items-center text-sm">
+                  {(
+                    Object.entries(
+                      leadData.leadScoring.qualificationCriteria
+                    ) as [string, string][]
+                  ).map(([key, value]) => (
+                    <div
+                      key={key}
+                      className="flex justify-between items-center text-sm"
+                    >
                       <span className="text-blue-100">
-                        {key.replace(/([A-Z])/g, ' $1').trim()}
+                        {key.replace(/([A-Z])/g, " $1").trim()}
                       </span>
-                      <span className={`font-medium ${value === 'YES' ? 'text-green-300' : 'text-red-300'}`}>
+                      <span
+                        className={`font-medium ${
+                          value === "YES" ? "text-green-300" : "text-red-300"
+                        }`}
+                      >
                         {value}
                       </span>
                     </div>
@@ -172,28 +215,36 @@ export default function ReportPage({ params }: { params: { id: string } }) {
                 <Building2 className="h-5 w-5 text-blue-600" />
                 <div>
                   <p className="text-sm text-gray-500">Industry</p>
-                  <p className="font-medium">{leadData.companyDetails.industry}</p>
+                  <p className="font-medium">
+                    {leadData.companyDetails.industry}
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
                 <Users className="h-5 w-5 text-blue-600" />
                 <div>
                   <p className="text-sm text-gray-500">Company Size</p>
-                  <p className="font-medium">{leadData.companyDetails.employees} employees</p>
+                  <p className="font-medium">
+                    {leadData.companyDetails.employees} employees
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
                 <MapPin className="h-5 w-5 text-blue-600" />
                 <div>
                   <p className="text-sm text-gray-500">Headquarters</p>
-                  <p className="font-medium">{leadData.companyDetails.headquarters}</p>
+                  <p className="font-medium">
+                    {leadData.companyDetails.headquarters}
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
                 <Briefcase className="h-5 w-5 text-blue-600" />
                 <div>
                   <p className="text-sm text-gray-500">Created</p>
-                  <p className="font-medium">{new Date(report.createdAt).toLocaleDateString()}</p>
+                  <p className="font-medium">
+                    {new Date(report.createdAt).toLocaleDateString()}
+                  </p>
                 </div>
               </div>
             </div>
@@ -247,9 +298,9 @@ ${leadData.companyName} operates in the ${leadData.companyDetails.industry} sect
               </div>
 
               {/* Right Column */}
-              
+
               <div className="space-y-6">
-              <div className="bg-gray-50 rounded-lg p-6 border-2 border-blue-100">
+                <div className="bg-gray-50 rounded-lg p-6 border-2 border-blue-100">
                   <h3 className="text-lg font-semibold text-blue-800 mb-4 flex items-center gap-2">
                     <Briefcase className="h-5 w-5" />
                     Meeting Details
@@ -261,44 +312,60 @@ ${leadData.companyName} operates in the ${leadData.companyDetails.industry} sect
                           <Calendar className="h-5 w-5 text-blue-600" />
                           <div>
                             <span className="font-medium">
-                              {new Date(report.meetingDate).toLocaleDateString('en-US', {
-                                day: 'numeric',
-                                month: 'short',
-                                year: 'numeric',
-                                
-                              }).replace(/(\d+)(?=(st|nd|rd|th))/, (match) => {
-                                const num = parseInt(match);
-                                const suffix = ['th', 'st', 'nd', 'rd'][(num % 10 > 3 || num % 100 - num % 10 === 10) ? 0 : num % 10];
-                                return `${num}${suffix}`;
-                              })}
+                              {new Date(report.meetingDate)
+                                .toLocaleDateString("en-US", {
+                                  day: "numeric",
+                                  month: "short",
+                                  year: "numeric",
+                                })
+                                .replace(/(\d+)(?=(st|nd|rd|th))/, (match) => {
+                                  const num = parseInt(match);
+                                  const suffix = ["th", "st", "nd", "rd"][
+                                    num % 10 > 3 ||
+                                    (num % 100) - (num % 10) === 10
+                                      ? 0
+                                      : num % 10
+                                  ];
+                                  return `${num}${suffix}`;
+                                })}
                             </span>
                             <span className="mx-2">at</span>
                             <span className="font-medium">
-                              {new Date(`2000-01-01T${report.meetingTime}`).toLocaleTimeString('en-US', {
-                                hour: 'numeric',
-                                minute: '2-digit',
-                                hour12: true
+                              {new Date(
+                                `2000-01-01T${report.meetingTime}`
+                              ).toLocaleTimeString("en-US", {
+                                hour: "numeric",
+                                minute: "2-digit",
+                                hour12: true,
                               })}
                             </span>
                           </div>
                         </div>
-                        
+
                         {report.meetingPlatform && (
                           <div className="flex items-center gap-2 text-blue-800">
                             <Video className="h-5 w-5 text-blue-600" />
-                            <span className="font-medium">{report.meetingPlatform}</span>
+                            <span className="font-medium">
+                              {report.meetingPlatform}
+                            </span>
                           </div>
                         )}
-                        
+
                         {report.problemPitch && (
                           <div className="mt-4 bg-blue-50 p-4 rounded-lg">
-                            <p className="text-sm text-blue-800 font-semibold mb-2">Problem / Pitch:</p>
-                            <p className="text-sm text-blue-700 leading-relaxed whitespace-pre-wrap">{report.problemPitch}</p>
+                            <p className="text-sm text-blue-800 font-semibold mb-2">
+                              Problem / Pitch:
+                            </p>
+                            <p className="text-sm text-blue-700 leading-relaxed whitespace-pre-wrap">
+                              {report.problemPitch}
+                            </p>
                           </div>
                         )}
                       </div>
                     ) : (
-                      <p className="text-gray-500 italic">No meeting scheduled yet</p>
+                      <p className="text-gray-500 italic">
+                        No meeting scheduled yet
+                      </p>
                     )}
                   </div>
                 </div>
@@ -339,15 +406,11 @@ ${leadData.companyName} operates in the ${leadData.companyDetails.industry} sect
                     `}</ReactMarkdown>
                   </div>
                 </div>
-
-                
               </div>
             </div>
           </div>
         </Card>
-   
       </div>
     </div>
-  )
+  );
 }
-

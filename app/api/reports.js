@@ -21,6 +21,7 @@ export default async function handler(req, res) {
       const totalReports = await reports.countDocuments();
       res.status(200).json({ reports: reportsList, totalReports });
     } catch (error) {
+      console.error("Error fetching reports:", error);
       res.status(500).json({ error: "Failed to fetch reports" });
     } finally {
       await client.close();

@@ -4,33 +4,107 @@ import { MongoClient, ObjectId, Db, Collection } from "mongodb"
 import clientPromise from '@/lib/mongodb'
 import { revalidatePath } from "next/cache"
 
-interface ApolloOrganization {
-  name?: string;
-  website_url?: string;
-  industry?: string;
-  employee_count?: string;
-  location?: {
-    city?: string;
-    state?: string;
-    country?: string;
-  };
-  description?: string;
-}
+// interface ApolloOrganization {
+//   name?: string;
+//   website_url?: string;
+//   industry?: string;
+//   employee_count?: string;
+//   location?: {
+//     city?: string;
+//     state?: string;
+//     country?: string;
+//   };
+//   description?: string;
+// }
 
 interface ApolloPerson {
-  name?: string;
-  title?: string;
-  photo_url?: string;
-  phone_number?: string;
-  linkedin_url?: string;
-  email?: string;
-  facebook_url?: string;
-  organization?: ApolloOrganization;
+  id: string;
+  first_name: string;
+  last_name: string;
+  name: string;
+  linkedin_url: string;
+  title: string;
+  email_status: string | null;
+
+  photo_url: string;
+  twitter_url: string | null;
+  github_url: string | null;
+
+  facebook_url: string | null;
+  extrapolated_email_confidence: number | null;
+  headline: string | null;
+  email: string;
+  organization_id: string;
+  employment_history: Array<EmploymentHistory>;
+
+  state: string;
+  city: string;
+  country: string;
+
+  organization: Organization;
+  seniority: string;
 }
 
 interface ApolloResponse {
   person: ApolloPerson;
 }
+
+type EmploymentHistory = {
+  _id: string;
+  created_at: string | null;
+  current: boolean;
+  degree: string | null;
+  description: string | null;
+  emails: string[] | null;
+  end_date: string | null;
+  grade_level: string | null;
+
+  kind: string | null;
+  major: string | null;
+
+  organization_id: string;
+  organization_name: string;
+
+  raw_address: string | null;
+  start_date: string;
+
+  title: string;
+  updated_at: string | null;
+
+  id: string;
+  key: string;
+};
+
+type Organization = {
+  id: string;
+  name: string;
+  website_url: string;
+  linkedin_url: string;
+  twitter_url: string;
+  facebook_url: string;
+  primary_phone: {
+    number: string;
+    source: string;
+    sanitized_number: string;
+  };
+  languages: string[];
+  phone: string;
+  linkedin_uid: string;
+  founded_year: number;
+  logo_url: string;
+  primary_domain: string;
+  sanitized_phone: string;
+  industry: string;
+  estimated_num_employees: number;
+  raw_address: string;
+  street_address: string;
+  city: string;
+  state: string;
+  postal_code: string;
+  country: string;
+  short_description: string;
+};
+
 
 // interface LeadData {
 //   name: string;
@@ -186,18 +260,19 @@ async function generateAIReport(apolloData: ApolloResponse) {
     position: personData.title || 'N/A',
     name: personData.name || 'N/A',
     contactDetails: {
-      phone: personData.phone_number || 'N/A',
+      // phone: personData.phone_number || 'N/A',
       linkedin: personData.linkedin_url || 'N/A',
       email: personData.email || 'N/A'
     },
     photo: personData.photo_url || null,
     aboutLead: `${personData.name || 'The lead'} is ${personData.title || 'a professional'} at ${org.name || 'their organization'}`,
-    aboutCompany: org.description || 'N/A',
+    aboutCompany: org.short_description || 'N/A',
     companyDetails: {
-      headquarters: org.location ? `${org.location.city || ''}, ${org.location.state || ''}, ${org.location.country || ''}`.replace(/, ,/g, ',').replace(/^,/, '').replace(/,$/, '') : 'N/A',
+      headquarters: org.country ? `${org.city || ''}, ${org.state || ''}, ${org.country || ''}`.replace(/, ,/g, ',').replace(/^,/, '').replace(/,$/, '') : 'N/A',
       website: org.website_url || 'N/A',
       industry: org.industry || 'N/A',
-      employees: org.employee_count || 'N/A'
+      employees: org.estimated_num_employees || 'N/A'
+
     },
     leadScoring: {
       rating: '⭐⭐⭐⭐⭐',
@@ -218,7 +293,6 @@ Create a professional lead report with the following structure:
 ## ${leadData.position} at ${leadData.companyName}
 
 ### Contact Details
-- **Phone:** ${leadData.contactDetails.phone}
 - **LinkedIn:** ${leadData.contactDetails.linkedin}
 - **Email:** ${leadData.contactDetails.email}
 
@@ -410,6 +484,7 @@ export async function deleteReport(formData: FormData) {
     await reports.deleteOne({ _id: new ObjectId(reportId) })
     revalidatePath('/history')
   } catch (error) {
+    console.error('Error deleting report:', error)
     throw new Error('Failed to delete report')
   }
 }
