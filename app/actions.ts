@@ -2,6 +2,7 @@
 
 import { MongoClient, ObjectId, Db, Collection } from "mongodb"
 import clientPromise from '@/lib/mongodb'
+import { revalidatePath } from "next/cache"
 
 interface ApolloOrganization {
   name?: string;
@@ -287,6 +288,10 @@ Please provide specific recommendations for engaging with this lead based on the
 
 export async function initiateReport(formData: FormData) {
   const email = formData.get("email") as string
+  const meetingDate = formData.get("meetingDate") as string
+  const meetingTime = formData.get("meetingTime") as string
+  const meetingPlatform = formData.get("meetingPlatform") as string
+  const problemPitch = formData.get("problemPitch") as string
 
   if (!email || !email.includes('@')) {
     throw new Error("Please provide a valid email address")
@@ -308,6 +313,10 @@ export async function initiateReport(formData: FormData) {
       companyDetails: { industry: "", employees: "", headquarters: "", website: "" },
       leadScoring: { rating: "", qualificationCriteria: {} }
     },
+    meetingDate,
+    meetingTime,
+    meetingPlatform,
+    problemPitch,
     createdAt: new Date(),
     status: "processing"
   }
@@ -326,11 +335,24 @@ async function processReport(email: string, reportId: string) {
   const { reports } = await getDb()
   
   try {
+    // Get the existing report to preserve meeting details
+    const existingReport = await reports.findOne({ _id: new ObjectId(reportId) })
+    
     // Step 1: Fetch Apollo Data
     const apolloData = await fetchApolloData(email)
     await reports.updateOne(
       { _id: new ObjectId(reportId) },
-      { $set: { apolloData, status: "fetching_apollo" } }
+      { 
+        $set: { 
+          apolloData, 
+          status: "fetching_apollo",
+          // Preserve meeting details
+          meetingDate: existingReport?.meetingDate,
+          meetingTime: existingReport?.meetingTime,
+          meetingPlatform: existingReport?.meetingPlatform,
+          problemPitch: existingReport?.problemPitch
+        } 
+      }
     )
 
     // Step 2: Generate AI Report
@@ -341,7 +363,12 @@ async function processReport(email: string, reportId: string) {
         $set: {
           report: aiReport,
           leadData,
-          status: "completed"
+          status: "completed",
+          // Preserve meeting details
+          meetingDate: existingReport?.meetingDate,
+          meetingTime: existingReport?.meetingTime,
+          meetingPlatform: existingReport?.meetingPlatform,
+          problemPitch: existingReport?.problemPitch
         }
       }
     )
@@ -370,5 +397,25 @@ export async function getReportStatus(reportId: string) {
     data: report.status === "completed" ? report : null,
     error: report.error
   }
+}
+
+export async function deleteReport(formData: FormData) {
+  const reportId = formData.get('reportId')?.toString()
+  if (!reportId) {
+    throw new Error('Report ID is required')
+  }
+
+  try {
+    const { reports } = await getDb()
+    await reports.deleteOne({ _id: new ObjectId(reportId) })
+    revalidatePath('/history')
+  } catch (error) {
+    throw new Error('Failed to delete report')
+  }
+}
+
+export async function getReports() {
+  const { reports } = await getDb()
+  return await reports.find({}).sort({ createdAt: -1 }).toArray()
 }
 

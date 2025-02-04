@@ -74,11 +74,22 @@ interface ReportLoaderProps {
 }
 
 export function ReportLoader({ reportId, onReportReady }: ReportLoaderProps) {
+  const [mounted, setMounted] = useState(false)
   const [status, setStatus] = useState<Status>('processing')
   const [error, setError] = useState<string | null>(null)
-  const [startTime] = useState(Date.now())
+  const [startTime, setStartTime] = useState<number | null>(null)
 
   useEffect(() => {
+    setStartTime(Date.now())
+  }, [])
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  useEffect(() => {
+    if (!mounted) return
+
     let timeoutId: NodeJS.Timeout
     let isMounted = true
 
@@ -103,7 +114,8 @@ export function ReportLoader({ reportId, onReportReady }: ReportLoaderProps) {
         }
         
         // Calculate elapsed time in seconds
-        const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000)
+        const effectiveStartTime = startTime ?? Date.now()
+        const elapsedSeconds = Math.floor((Date.now() - effectiveStartTime) / 1000)
         
         // If not completed and not failed, poll again in 2 seconds
         if (result.status !== 'completed' && result.status !== 'failed') {
@@ -132,7 +144,7 @@ export function ReportLoader({ reportId, onReportReady }: ReportLoaderProps) {
         clearTimeout(timeoutId)
       }
     }
-  }, [reportId, onReportReady, startTime])
+  }, [reportId, onReportReady, startTime, mounted])
 
   const getLoadingMessage = () => {
     switch (status) {
@@ -145,8 +157,17 @@ export function ReportLoader({ reportId, onReportReady }: ReportLoaderProps) {
     }
   }
 
+  if (!mounted) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent"></div>
+      </div>
+    )
+  }
+
   if (status !== 'completed' && status !== 'failed') {
-    const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000)
+    const effectiveStartTime = startTime ?? Date.now()
+    const elapsedSeconds = Math.floor((Date.now() - effectiveStartTime) / 1000)
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px]">
         <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent"></div>

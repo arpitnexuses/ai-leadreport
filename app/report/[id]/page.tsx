@@ -1,14 +1,14 @@
 'use client'
 
-
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import Link from "next/link"
 import ReactMarkdown from 'react-markdown'
 import Image from 'next/image'
-import { Building2, Mail, Phone, Linkedin, Globe, MapPin, Users, Briefcase } from 'lucide-react'
-import { ReportLoader } from "./ReportLoader"
+import { Building2, Mail, Phone, Linkedin, Globe, MapPin, Users, Briefcase, Calendar, Video } from 'lucide-react'
+import dynamic from 'next/dynamic'
 import { useState } from "react"
+import { MeetingDetailsForm } from '@/components/ui/input'
 
 interface LeadData {
   name: string;
@@ -64,7 +64,13 @@ interface LeadReport {
   createdAt: Date;
   status: string;
   error?: string;
+  meetingDate?: string;
+  meetingTime?: string;
+  meetingPlatform?: string;
+  problemPitch?: string;
 }
+
+const ReportLoader = dynamic(() => import('./ReportLoader').then(mod => mod.ReportLoader), { ssr: false })
 
 export default function ReportPage({ params }: { params: { id: string } }) {
   const [report, setReport] = useState<LeadReport | null>(null)
@@ -82,45 +88,38 @@ export default function ReportPage({ params }: { params: { id: string } }) {
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-5xl mx-auto">
-        <div className="flex justify-end mb-4 gap-2">
-          <Link href="/">
-            <Button variant="outline">New Report</Button>
-          </Link>
-          <Link href="/history">
-            <Button variant="secondary">View History</Button>
-          </Link>
-        </div>
-        
         <Card className="bg-white shadow-lg">
           {/* Header Section */}
-          <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white p-8 rounded-t-xl">
-            <div className="flex items-start gap-8">
-              <div className="relative w-32 h-32 rounded-full overflow-hidden border-4 border-white/20 shadow-xl bg-white/5 backdrop-blur-sm">
-                <Image
-                  src={leadData.photo || `/placeholder.png`}
-                  alt={leadData.name}
-                  fill
-                  className="object-cover hover:scale-105 transition-transform duration-200"
-                  priority
-                  sizes="(max-width: 128px) 100vw, 128px"
-                />
+          <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white p-4 sm:p-8 rounded-t-xl">
+            <div className="flex flex-col md:flex-row md:items-start gap-4 md:gap-8">
+              <div className="flex items-center justify-center">
+                <div className="relative w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden border-4 border-white/20 shadow-xl bg-white/5 backdrop-blur-sm">
+                  <Image
+                    src={leadData.photo || `/placeholder.png`}
+                    alt={leadData.name}
+                    fill
+                    className="object-cover hover:scale-105 transition-transform duration-200"
+                    priority
+                    sizes="(max-width: 128px) 100vw, 128px"
+                  />
+                </div>
               </div>
-              <div className="flex-1">
-                <h1 className="text-3xl font-bold">{leadData.name}</h1>
-                <p className="text-xl text-blue-100 mt-2">{leadData.position}</p>
-                <p className="text-lg text-blue-200 mt-1">{leadData.companyName}</p>
-                
-                <div className="grid grid-cols-2 gap-4 mt-6">
+              <div className="flex-1 text-center md:text-left">
+                <h1 className="text-2xl md:text-3xl font-bold">{leadData.name}</h1>
+                <p className="text-lg md:text-xl text-blue-100 mt-2">{leadData.position}</p>
+                <p className="text-base md:text-lg text-blue-200 mt-1">{leadData.companyName}</p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4 md:mt-6">
                   {leadData.contactDetails.email && (
                     <a href={`mailto:${leadData.contactDetails.email}`} 
-                       className="flex items-center gap-2 text-sm text-blue-100 hover:text-white">
+                       className="flex items-center justify-center md:justify-start gap-2 text-sm text-blue-100 hover:text-white">
                       <Mail className="h-4 w-4" />
                       {leadData.contactDetails.email}
                     </a>
                   )}
                   {leadData.contactDetails.phone && (
                     <a href={`tel:${leadData.contactDetails.phone}`} 
-                       className="flex items-center gap-2 text-sm text-blue-100 hover:text-white">
+                       className="flex items-center justify-center md:justify-start gap-2 text-sm text-blue-100 hover:text-white">
                       <Phone className="h-4 w-4" />
                       {leadData.contactDetails.phone}
                     </a>
@@ -129,7 +128,7 @@ export default function ReportPage({ params }: { params: { id: string } }) {
                     <a href={leadData.contactDetails.linkedin} 
                        target="_blank" 
                        rel="noopener noreferrer" 
-                       className="flex items-center gap-2 text-sm text-blue-100 hover:text-white">
+                       className="flex items-center justify-center md:justify-start gap-2 text-sm text-blue-100 hover:text-white">
                       <Linkedin className="h-4 w-4" />
                       LinkedIn Profile
                     </a>
@@ -138,17 +137,17 @@ export default function ReportPage({ params }: { params: { id: string } }) {
                     <a href={leadData.companyDetails.website} 
                        target="_blank" 
                        rel="noopener noreferrer" 
-                       className="flex items-center gap-2 text-sm text-blue-100 hover:text-white">
+                       className="flex items-center justify-center md:justify-start gap-2 text-sm text-blue-100 hover:text-white">
                       <Globe className="h-4 w-4" />
                       Company Website
                     </a>
                   )}
                 </div>
               </div>
-              
-              <div className="bg-white/10 rounded-lg p-4 min-w-[200px]">
-                <h3 className="text-lg font-semibold mb-2">Lead Score</h3>
-                <div className="text-2xl font-bold mb-3">{leadData.leadScoring.rating}</div>
+
+              <div className="bg-white/10 rounded-lg p-4 w-full md:min-w-[200px] md:w-auto mt-4 md:mt-0">
+                <h3 className="text-lg font-semibold mb-2 text-center md:text-left">Lead Score</h3>
+                <div className="text-2xl font-bold mb-3 text-center md:text-left">{leadData.leadScoring.rating}</div>
                 <div className="space-y-1">
                   {(Object.entries(leadData.leadScoring.qualificationCriteria) as [string, string][]).map(([key, value]) => (
                     <div key={key} className="flex justify-between items-center text-sm">
@@ -228,7 +227,7 @@ ${leadData.name} currently serves as ${leadData.position} at ${leadData.companyN
                   </div>
                 </div>
 
-                <div className="bg-gray-50 rounded-lg p-6">
+                <div className="bg-gray-50 rounded-lg p-6 min-h-[465px]">
                   <h3 className="text-lg font-semibold text-blue-800 mb-4 flex items-center gap-2">
                     <Building2 className="h-5 w-5" />
                     Company Analysis
@@ -248,7 +247,61 @@ ${leadData.companyName} operates in the ${leadData.companyDetails.industry} sect
               </div>
 
               {/* Right Column */}
+              
               <div className="space-y-6">
+              <div className="bg-gray-50 rounded-lg p-6 border-2 border-blue-100">
+                  <h3 className="text-lg font-semibold text-blue-800 mb-4 flex items-center gap-2">
+                    <Briefcase className="h-5 w-5" />
+                    Meeting Details
+                  </h3>
+                  <div className="prose prose-blue prose-sm">
+                    {report.meetingDate && report.meetingTime ? (
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-2 text-blue-800">
+                          <Calendar className="h-5 w-5 text-blue-600" />
+                          <div>
+                            <span className="font-medium">
+                              {new Date(report.meetingDate).toLocaleDateString('en-US', {
+                                day: 'numeric',
+                                month: 'short',
+                                year: 'numeric',
+                                
+                              }).replace(/(\d+)(?=(st|nd|rd|th))/, (match) => {
+                                const num = parseInt(match);
+                                const suffix = ['th', 'st', 'nd', 'rd'][(num % 10 > 3 || num % 100 - num % 10 === 10) ? 0 : num % 10];
+                                return `${num}${suffix}`;
+                              })}
+                            </span>
+                            <span className="mx-2">at</span>
+                            <span className="font-medium">
+                              {new Date(`2000-01-01T${report.meetingTime}`).toLocaleTimeString('en-US', {
+                                hour: 'numeric',
+                                minute: '2-digit',
+                                hour12: true
+                              })}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        {report.meetingPlatform && (
+                          <div className="flex items-center gap-2 text-blue-800">
+                            <Video className="h-5 w-5 text-blue-600" />
+                            <span className="font-medium">{report.meetingPlatform}</span>
+                          </div>
+                        )}
+                        
+                        {report.problemPitch && (
+                          <div className="mt-4 bg-blue-50 p-4 rounded-lg">
+                            <p className="text-sm text-blue-800 font-semibold mb-2">Problem / Pitch:</p>
+                            <p className="text-sm text-blue-700 leading-relaxed whitespace-pre-wrap">{report.problemPitch}</p>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-gray-500 italic">No meeting scheduled yet</p>
+                    )}
+                  </div>
+                </div>
                 <div className="bg-gray-50 rounded-lg p-6">
                   <h3 className="text-lg font-semibold text-blue-800 mb-4 flex items-center gap-2">
                     <Briefcase className="h-5 w-5" />
@@ -283,18 +336,16 @@ ${leadData.companyName} operates in the ${leadData.companyDetails.industry} sect
 - **Solution Fit**: ${leadData.leadScoring.qualificationCriteria.viewedSolutionDeck}
 - **Identified Need**: ${leadData.leadScoring.qualificationCriteria.need}
 
-### Next Steps
-1. Schedule initial discovery call
-2. Share relevant case studies
-3. Prepare customized solution presentation
-4. Follow up within 48 hours
                     `}</ReactMarkdown>
                   </div>
                 </div>
+
+                
               </div>
             </div>
           </div>
         </Card>
+   
       </div>
     </div>
   )
